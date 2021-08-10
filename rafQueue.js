@@ -44,6 +44,17 @@ export default class RafAnimationQueue {
       requestAnimationFrame(this.queueLoop.bind(this));
     }
   }
+  // 加 await ，支持传入 异步函数 ，执行完后才执行下一个
+  // async queueLoop() {
+  //   const callback = this.queue.shift();
+  //   callback instanceof Function && await callback(); 
+
+  //   if (!this.queue.length) {
+  //     this.queueInProgress = false;
+  //   } else {
+  //     requestAnimationFrame(this.queueLoop.bind(this));
+  //   }
+  // }
 
   clear() {
     this.queue = [];
