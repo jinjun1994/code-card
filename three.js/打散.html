@@ -1,197 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<title>three.js webgl - buffergeometry - lines</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<link type="text/css" rel="stylesheet" href="main.css">
-	</head>
-	<body>
+  <head>
+    <title>three.js webgl - buffergeometry - lines</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <link type="text/css" rel="stylesheet" href="main.css" />
+  </head>
+  <body>
+    <div id="container"></div>
+    <div id="info">
+      <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a>
+      webgl - buffergeometry - lines
+    </div>
 
-		<div id="container"></div>
-		<div id="info"><a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> webgl - buffergeometry - lines</div>
+    <script type="module">
+      import * as THREE from "../build/three.module.js";
 
-		<script type="module">
+      import Stats from "./jsm/libs/stats.module.js";
 
-			import * as THREE from '../build/three.module.js';
+      let container, stats, clock;
 
-			import Stats from './jsm/libs/stats.module.js';
+      let camera, scene, renderer;
 
-			let container, stats, clock;
+      let line;
 
-			let camera, scene, renderer;
+      const segments = 9999;
+      const r = 800;
+      let t = 0;
 
-			let line;
+      init();
+      animate();
 
-			const segments = 9999;
-			const r = 800;
-			let t = 0;
+      function init() {
+        container = document.getElementById("container");
 
-			init();
-			animate();
+        //
 
-			function init() {
+        camera = new THREE.PerspectiveCamera(
+          27,
+          window.innerWidth / window.innerHeight,
+          1,
+          4000
+        );
+        camera.position.z = 2750;
 
-				container = document.getElementById( 'container' );
+        scene = new THREE.Scene();
 
-				//
+        clock = new THREE.Clock();
 
-				camera = new THREE.PerspectiveCamera( 27, window.innerWidth / window.innerHeight, 1, 4000 );
-				camera.position.z = 2750;
+        const geometry = new THREE.BufferGeometry();
+        const material = new THREE.LineBasicMaterial({ vertexColors: true });
 
-				scene = new THREE.Scene();
+        const positions = [];
+        const colors = [];
 
-				clock = new THREE.Clock();
+        for (let i = 0; i < segments; i++) {
+          const x = Math.random() * r - r / 2;
+          const y = Math.random() * r - r / 2;
+          const z = Math.random() * r - r / 2;
 
-				const geometry = new THREE.BufferGeometry();
-				const material = new THREE.LineBasicMaterial( { vertexColors: true } );
+          // positions
 
-				const positions = [];
-				const colors = [];
+          positions.push(x, y, z);
 
-				for ( let i = 0; i < segments; i ++ ) {
+          // colors
 
-					const x = Math.random() * r - r / 2;
-					const y = Math.random() * r - r / 2;
-					const z = Math.random() * r - r / 2;
+          colors.push(x / r + 0.5);
+          colors.push(y / r + 0.5);
+          colors.push(z / r + 0.5);
+        }
 
-					// positions
+        geometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(positions, 3)
+        );
+        geometry.setAttribute(
+          "color",
+          new THREE.Float32BufferAttribute(colors, 3)
+        );
+        generateMorphTargets(geometry);
+        console.log(geometry);
+        // geometry.computeBoundingSphere();
 
-					positions.push( x, y, z );
+        line = new THREE.Mesh(geometry, material);
+        console.log(line);
+        scene.add(line);
 
-					// colors
+        //
 
-					colors.push( ( x / r ) + 0.5 );
-					colors.push( ( y / r ) + 0.5 );
-					colors.push( ( z / r ) + 0.5 );
+        renderer = new THREE.WebGLRenderer();
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.outputEncoding = THREE.sRGBEncoding;
 
-				}
+        container.appendChild(renderer.domElement);
 
-				geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( positions, 3 ) );
-				geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
-				generateMorphTargets( geometry );
-console.log(geometry);
-				// geometry.computeBoundingSphere();
+        //
 
-				line = new THREE.Mesh( geometry, material );
-				console.log(line);
-				scene.add( line );
+        stats = new Stats();
+        container.appendChild(stats.dom);
 
-				//
+        //
 
-				renderer = new THREE.WebGLRenderer();
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				renderer.outputEncoding = THREE.sRGBEncoding;
+        window.addEventListener("resize", onWindowResize);
+      }
 
-				container.appendChild( renderer.domElement );
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
 
-				//
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
 
-				stats = new Stats();
-				container.appendChild( stats.dom );
+      //
 
-				//
+      function animate() {
+        requestAnimationFrame(animate);
 
-				window.addEventListener( 'resize', onWindowResize );
+        render();
+        stats.update();
+      }
 
-			}
+      function render() {
+        const delta = clock.getDelta();
+        const time = clock.getElapsedTime();
 
-			function onWindowResize() {
+        line.rotation.x = time * 0.25;
+        line.rotation.y = time * 0.5;
 
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
+        t += delta * 0.5;
+        line.morphTargetInfluences[0] = Math.abs(Math.sin(t));
 
-				renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.render(scene, camera);
+      }
 
-			}
+      function generateMorphTargets(geometry) {
+        console.log(geometry);
+        const data = [];
+        geometry.computeBoundingSphere();
+        // const 	{x:x1,y:y1,z:z1} = geometry.boundingSphere.center
+        const center = geometry.boundingSphere.center;
+        // console.log(x1,y1,z1);
+        const position = geometry.attributes.position;
+        console.log(position);
 
-			//
+        // 这里将一个三角形设为同一个物体，后续将id相同的顶点设为同一个物体
+        // 算出三角形面的中心向量 减去 geometry 中心向量
+        // 三个顶点坐标加上 上一步结果的xyz
+        for (let i = 0; i < segments / 3; i++) {
+          const x1 = position.getX(i);
+          const y1 = position.getY(i);
+          const z1 = position.getZ(i);
+          const x2 = position.getX(i);
+          const y2 = position.getY(i);
+          const z2 = position.getZ(i);
+          const x3 = position.getX(i);
+          const y3 = position.getY(i);
+          const z3 = position.getZ(i);
 
-			function animate() {
+          var plane = new THREE.BufferGeometry(); //创建一个Buffer类型几何体对象
+          //类型数组创建顶点数据
+          var vertices = new Float32Array([
+            x1,
+            y1,
+            z1, //顶点1坐标
+            x2,
+            y2,
+            z2, //顶点1坐标
+            x3,
+            y3,
+            z3, //顶点1坐标
+          ]);
+          // 创建属性缓冲区对象
+          var attribue = new THREE.BufferAttribute(vertices, 3); //3个为一组，表示一个顶点的xyz坐标
+          // 设置几何体attributes属性的位置属性
+          plane.attributes.position = attribue;
 
-				requestAnimationFrame( animate );
+          plane.computeBoundingSphere();
+          console.log(plane);
+          const planeCenter = plane.boundingSphere.center;
+          // var L = plane.distanceToPoint(center);
+          const distance1 = new THREE.Vector3(x1, y1, z1).sub(center);
+          const distance2 = new THREE.Vector3(x2, y2, z2).sub(center);
+          const distance3 = new THREE.Vector3(x3, y3, z3).sub(center);
 
-				render();
-				stats.update();
+          data.push(x1 + distance1.x, y1 + distance1.y, z1 + distance1.z);
+          data.push(x2 + distance2.x, y2 + distance2.y, z2 + distance2.z);
+          data.push(x3 + distance3.x, y3 + distance3.y, z3 + distance3.z);
+        }
 
-			}
+        const morphTarget = new THREE.Float32BufferAttribute(data, 3);
+        morphTarget.name = "target1";
 
-			function render() {
-
-				const delta = clock.getDelta();
-				const time = clock.getElapsedTime();
-
-				line.rotation.x = time * 0.25;
-				line.rotation.y = time * 0.5;
-
-				t += delta * 0.5;
-				line.morphTargetInfluences[ 0 ] = Math.abs( Math.sin( t ) );
-
-				renderer.render( scene, camera );
-
-			}
-
-			function generateMorphTargets( geometry ) {
-               console.log(geometry);
-		   		const data = [];
-				   geometry.computeBoundingSphere()
-		    	// const 	{x:x1,y:y1,z:z1} = geometry.boundingSphere.center
-		    	const center= geometry.boundingSphere.center
-				// console.log(x1,y1,z1);
-				const position = geometry.attributes.position
-				console.log(position);
-
-				// 这里将一个三角形设为同一个物体，后续将id相同的顶点设为同一个物体
-				// 算出三角形面的中心向量 减去 geometry 中心向量
-				// 三个顶点坐标加上 上一步结果的xyz
-				for ( let i = 0; i < segments/3; i ++ ) {
-
-					const x1 = position.getX(i);
-					const y1 =  position.getY(i);
-					const z1 =  position.getZ(i);
-					const x2 = position.getX(i);
-					const y2 =  position.getY(i);
-					const z2 =  position.getZ(i);
-					const x3 = position.getX(i);
-					const y3 =  position.getY(i);
-					const z3 =  position.getZ(i);
-
-
-					var plane = new THREE.BufferGeometry(); //创建一个Buffer类型几何体对象
-                    //类型数组创建顶点数据
-                    var vertices = new Float32Array([
-                      x1, y1, z1, //顶点1坐标
-                      x2, y2, z2, //顶点1坐标
-                      x3, y3, z3, //顶点1坐标
-                    ]);
-                    // 创建属性缓冲区对象
-                    var attribue = new THREE.BufferAttribute(vertices, 3); //3个为一组，表示一个顶点的xyz坐标
-                    // 设置几何体attributes属性的位置属性
-                    plane.attributes.position = attribue;
-                    
-                    plane.computeBoundingSphere();
-                    console.log(plane);
-					const planeCenter = plane.boundingSphere.center 
-					// var L = plane.distanceToPoint(center);
-					const distance1 = new THREE.Vector3(x1,y1,z1).sub(center);
-					const distance2 = new THREE.Vector3(x2,y2,z2).sub(center);
-					const distance3 = new THREE.Vector3(x3,y3,z3).sub(center);
-
-					data.push( x1+distance1.x, y1+distance1.y, z1+distance1.z );
-					data.push( x2+distance2.x, y2+distance2.y, z2+distance2.z );
-					data.push( x3+distance3.x, y3+distance3.y, z3+distance3.z );
-            
-				}
-
-				const morphTarget = new THREE.Float32BufferAttribute( data, 3 );
-				morphTarget.name = 'target1';
-
-				geometry.morphAttributes.position = [ morphTarget ];
-
-			}
-
-		</script>
-
-	</body>
+        geometry.morphAttributes.position = [morphTarget];
+      }
+    </script>
+  </body>
 </html>
