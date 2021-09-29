@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <button id="test">test 带取消</button>
+    <button id="test1">test2 不带取消</button>
+  </body>
+  <script>
+    class CancelToken {
+      constructor(cancelFn) {
+        this.promise = new Promise((resolve, reject) => {
+          cancelFn(() => {
+            setTimeout(console.log, 0, "delay cancelled");
+            resolve();
+          });
+        });
+      }
+    }
+    let temp;
+    let cancelCallback;
+    function test() {
+      temp = !temp;
+      if (cancelCallback) cancelCallback();
+      if (temp) {
+        cancelCallback = p1();
+      } else {
+        cancelCallback = p2();
+      }
+    }
+    function test1() {
+      temp = !temp;
+      if (temp) {
+        p1();
+      } else {
+        p2();
+      }
+    }
+    function p1() {
+      console.log("p1");
+      let cancelCallback1;
+      new Promise((resolve, reject) => {
+        const id = setTimeout(() => {
+          setTimeout(console.log, 0, "p1 请求完了");
+          setTimeout(console.log, 0, "p1 模型操作");
+          resolve();
+        }, 1000);
+        // 这里用setTimeout 模拟了请求， https://axios-http.com/zh/docs/cancellation
+
+        const cancelToken = new CancelToken((cancelCallback) => {
+          cancelCallback1 = cancelCallback;
+        });
+        cancelToken.promise.then(() => clearTimeout(id));
+        // 这里用 clearTimeout 模拟取消请求 ，
+      });
+      return cancelCallback1;
+    }
+    function p2() {
+      let cancelCallback2;
+      new Promise((resolve, reject) => {
+        const id = setTimeout(() => {
+          setTimeout(console.log, 0, "p2 请求完了");
+          setTimeout(console.log, 0, "p2 模型操作");
+          resolve();
+        }, 2000);
+
+        const cancelToken = new CancelToken((cancelCallback) => {
+          cancelCallback2 = cancelCallback;
+        });
+        cancelToken.promise.then(() => clearTimeout(id));
+      });
+      return cancelCallback2;
+    }
+    const testButton = document.querySelector("#test");
+    const test1Button = document.querySelector("#test1");
+    testButton.addEventListener("click", () => test());
+    test1Button.addEventListener("click", () => test1());
+  </script>
+</html>
