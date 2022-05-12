@@ -39,13 +39,12 @@
 			import { MeshoptDecoder } from 'https://cdn.skypack.dev/three@0.130.1/examples/jsm/libs/meshopt_decoder.module.js';
 			import { DRACOLoader } from 'https://cdn.skypack.dev/three@0.130.1/examples/jsm/loaders/DRACOLoader.js';
 import { GLTFExporter } from "https://cdn.skypack.dev/three@0.130.1/examples/jsm/exporters/GLTFExporter.js";
-import * as BufferGeometryUtils from 'https://cdn.skypack.dev/three@0.130.1/examples/jsm/utils/BufferGeometryUtils.js';
-
+import { BufferGeometryUtils } from '//cdn.skypack.dev/three@0.130.1/examples/jsm/utils/BufferGeometryUtils.js';
 
 
 	// Configure and create Draco decoder.
 	const dracoLoader = new DRACOLoader();
-		dracoLoader.setDecoderPath( 'js/libs/draco/' );
+		dracoLoader.setDecoderPath( 'draco/' );
 		dracoLoader.setDecoderConfig( { type: 'js' } );
 			let camera, scene, renderer;
 			init();
