@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - GLTFloader + compressed</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+
+	<body>
+		<div id="info">
+			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - GLTFLoader + compression extensions<br />
+			<a href="https://sketchfab.com/3d-models/coffeemat-7fb196a40a6e4697aad9ca2f75c8b33d" target="_blank" rel="noopener">Coffeemat</a> by
+			<a href="https://sketchfab.com/OFFcours1" target="_blank" rel="noopener">Roman Red</a>
+		</div>
+
+		<!-- Import maps polyfill -->
+		<!-- Remove this when import maps will be widely supported -->
+		<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js"
+				}
+			}
+		</script>
+
+		<script type="module">
+
+            import * as THREE from 'https://cdn.skypack.dev/three@0.130.1/build/three.module.js';
+
+
+			import { RoomEnvironment } from 'https://cdn.skypack.dev/three@0.130.1/examples/jsm/environments/RoomEnvironment.js';
+			import { OrbitControls } from 'https://cdn.skypack.dev/three@0.130.1/examples/jsm/controls/OrbitControls.js';
+			import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.130.1/examples/jsm/loaders/GLTFLoader.js';
+
+			import { KTX2Loader } from 'https://cdn.skypack.dev/three@0.130.1/examples/jsm/loaders/KTX2Loader.js';
+			import { MeshoptDecoder } from 'https://cdn.skypack.dev/three@0.130.1/examples/jsm/libs/meshopt_decoder.module.js';
+			import { DRACOLoader } from 'https://cdn.skypack.dev/three@0.130.1/examples/jsm/loaders/DRACOLoader.js';
+import { GLTFExporter } from "https://cdn.skypack.dev/three@0.130.1/examples/jsm/exporters/GLTFExporter.js";
+import * as BufferGeometryUtils from 'https://cdn.skypack.dev/three@0.130.1/examples/jsm/utils/BufferGeometryUtils.js';
+
+
+
+	// Configure and create Draco decoder.
+	const dracoLoader = new DRACOLoader();
+		dracoLoader.setDecoderPath( 'js/libs/draco/' );
+		dracoLoader.setDecoderConfig( { type: 'js' } );
+			let camera, scene, renderer;
+			init();
+			render();
+			const group = new THREE.Group();
+
+//-------------------------------
+const link = document.createElement("a");
+link.style.display = "none";
+document.body.appendChild(link); // Firefox workaround, see #6594
+function save(blob, filename) {
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+
+  // URL.revokeObjectURL( url ); breaks Firefox...
+}
+	function saveArrayBuffer(buffer, filename) {
+		save(new Blob([buffer], { type: "application/octet-stream" }), filename);
+	  }
+	  function saveString(text, filename) {
+		save(new Blob([text], { type: "text/plain" }), filename);
+	  }
+
+
+window.toGltf = function toGltf(){
+	const exporter = new GLTFExporter();
+
+	// Parse the input and generate the glTF output
+	exporter.parse(group, function (gltf) {
+	  if (gltf instanceof ArrayBuffer) {
+		saveArrayBuffer(gltf, "scene.glb");
+	  } else {
+		const output = JSON.stringify(gltf, null, 2);
+		console.log(output);
+		saveString(output, "scene.gltf");
+	  }
+	});
+}
+
+//-------------------------------
+
+function mergeObject( object ) {
+console.log("mergeObject");
+				object.updateMatrixWorld( true );
+
+				const geometry = [];
+				object.traverse( c => {
+
+					if ( c.isMesh ) {
+
+						const g = c.geometry;
+						g.applyMatrix4( c.matrixWorld );
+						for ( const key in g.attributes ) {
+
+							if ( key !== 'position' && key !== 'normal' ) {
+
+								g.deleteAttribute( key );
+
+							}
+
+						}
+						geometry.push( g.toNonIndexed() );
+
+					}
+
+				} );
+
+				const mergedGeometries = BufferGeometryUtils.mergeBufferGeometries( geometry, false );
+				const mergedGeometry = BufferGeometryUtils.mergeVertices( mergedGeometries ).center();
+
+				const group = new THREE.Group();
+				const mesh = new THREE.Mesh( mergedGeometry );
+				group.add( mesh );
+				return group;
+
+			}
+			function init() {
+
+				const container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.toneMapping = THREE.ACESFilmicToneMapping;
+				renderer.toneMappingExposure = 1;
+				renderer.outputEncoding = THREE.sRGBEncoding;
+				container.appendChild( renderer.domElement );
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000000 );
+				camera.position.set( 0, 100, 0 );
+
+				const environment = new RoomEnvironment();
+				const pmremGenerator = new THREE.PMREMGenerator( renderer );
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xbbbbbb );
+				scene.environment = pmremGenerator.fromScene( environment ).texture;
+
+				const grid = new THREE.GridHelper( 500, 10, 0xffffff, 0xffffff );
+				grid.material.opacity = 0.5;
+				grid.material.depthWrite = false;
+				grid.material.transparent = true;
+				scene.add( grid );
+
+				const ktx2Loader = new KTX2Loader()
+					.setTranscoderPath( 'js/libs/basis/' )
+					.detectSupport( renderer );
+
+				const loader = new GLTFLoader()
+				// .setPath( 'models/gltf/' );
+				loader.setKTX2Loader( ktx2Loader );
+				loader.setMeshoptDecoder( MeshoptDecoder );
+				loader.setDRACOLoader( dracoLoader );
+
+				loader.load( 'http://127.0.0.1:8081/conditional-lines/xili-p20.gltf', function ( gltf ) {
+
+					// coffeemat.glb was produced from the source scene using gltfpack:
+					// gltfpack -i coffeemat/scene.gltf -o coffeemat.glb -cc -tc
+					// The resulting model uses EXT_meshopt_compression (for geometry) and KHR_texture_basisu (for texture compression using ETC1S/BasisLZ)
+
+					gltf.scene.position.y = 8;
+
+					// scene.add( gltf.scene );
+					const model = mergeObject( gltf.scene );
+					const mesh = model.children[ 0 ];
+
+
+					
+					const wireframe = new THREE.WireframeGeometry( mesh.geometry );
+					let line = new THREE.LineSegments( wireframe );
+					line.material.depthTest = false;
+					line.material.opacity = 0.25;
+					line.material.Color = new THREE.Color( 0x000 );
+					// line.material.color = 0x000,
+
+					// line.material.transparent = true;
+					line.position.x = 0;
+					line.position.y = 0;
+					line.position.z = 0;
+					console.log(line);
+					group.add( line );
+					// scene.add( new THREE.BoxHelper( line ) );
+		
+
+					const edges = new THREE.EdgesGeometry( mesh.geometry );
+					line = new THREE.LineSegments( edges );
+					line.material.depthTest = false;
+					line.material.opacity = 0.25;
+					line.material.Color = new THREE.Color( 0x000 );
+
+
+					// line.material.transparent = true;
+					line.position.x = 0;
+					line.position.y = 0;
+					line.position.z = 0;
+					group.add( line );
+					scene.add( group );
+					render();
+
+					window.scene = scene;
+
+
+				} );
+
+				const controls = new OrbitControls( camera, renderer.domElement );
+				controls.addEventListener( 'change', render ); // use if there is no animation loop
+				controls.minDistance = 400;
+				controls.maxDistance = 1000;
+				controls.target.set( 10, 90, - 16 );
+				controls.update();
+
+				window.addEventListener( 'resize', onWindowResize );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				render();
+
+			}
+
+			//
+
+			function render() {
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
