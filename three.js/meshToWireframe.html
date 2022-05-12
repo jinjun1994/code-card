@@ -187,11 +187,11 @@ console.log("mergeObject");
 					line.position.y = 0;
 					line.position.z = 0;
 					console.log(line);
-					group.add( line );
+					// group.add( line );
 					// scene.add( new THREE.BoxHelper( line ) );
 		
 
-					const edges = new THREE.EdgesGeometry( mesh.geometry );
+					const edges = new THREE.EdgesGeometry( mesh.geometry, 15 );
 					line = new THREE.LineSegments( edges );
 					line.material.depthTest = false;
 					line.material.opacity = 0.25;
