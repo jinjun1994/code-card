@@ -16,6 +16,6 @@
     "glsl-pi": "^1.0.0",
     "glslify": "^6.1.0",
     "nice-color-palettes": "^2.0.0",
-    "three": "^0.87.1"
+    "three": "^0.130.1"
   }
 }

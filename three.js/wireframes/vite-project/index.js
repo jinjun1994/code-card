@@ -88,7 +88,7 @@ const material = new THREE.ShaderMaterial({
 });
 
 // add the mesh with an empty geometry for now, we will change it later
-const mesh = new THREE.Mesh(new THREE.Geometry(), material);
+const mesh = new THREE.Mesh(new THREE.BufferGeometry(), material);
 scene.add(mesh);
 
 const clock = new THREE.Clock();

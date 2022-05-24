@@ -1,4 +1,4 @@
-export  function addBarycentricCoordinates (bufferGeometry, removeEdge = false) {
+export function addBarycentricCoordinates(bufferGeometry, removeEdge = false) {
   const attrib = bufferGeometry.getIndex() || bufferGeometry.getAttribute('position');
   const count = attrib.count / 3;
   const barycentric = [];
@@ -25,10 +25,10 @@ export  function addBarycentricCoordinates (bufferGeometry, removeEdge = false) 
   // add the attribute to the geometry
   const array = new Float32Array(barycentric);
   const attribute = new THREE.BufferAttribute(array, 3);
-  bufferGeometry.addAttribute('barycentric', attribute);
+  bufferGeometry.setAttribute('barycentric', attribute);
 };
 
-export  function unindexBufferGeometry (bufferGeometry) {
+export function unindexBufferGeometry(bufferGeometry) {
   // un-indices the geometry, copying all attributes like position and uv
   const index = bufferGeometry.getIndex();
   if (!index) return; // already un-indexed
@@ -40,7 +40,8 @@ export  function unindexBufferGeometry (bufferGeometry) {
   const newAttribData = Object.keys(attributes).map(key => {
     return {
       array: [],
-      attribute: bufferGeometry.getAttribute(key)
+      attribute: bufferGeometry.getAttribute(key),
+      attributeKey: key
     };
   });
 
@@ -49,7 +50,7 @@ export  function unindexBufferGeometry (bufferGeometry) {
     const a = indexArray[i * 3 + 0];
     const b = indexArray[i * 3 + 1];
     const c = indexArray[i * 3 + 2];
-    const indices = [ a, b, c ];
+    const indices = [a, b, c];
 
     // for each attribute, put vertex into unindexed list
     newAttribData.forEach(data => {
@@ -71,6 +72,7 @@ export  function unindexBufferGeometry (bufferGeometry) {
   // now copy over new data
   newAttribData.forEach(data => {
     const newArray = new data.attribute.array.constructor(data.array);
-    data.attribute.setArray(newArray);
+    const { attribute } = data
+    bufferGeometry.setAttribute(data.attributeKey, new THREE.BufferAttribute(newArray, attribute.itemSize));
   });
 };
