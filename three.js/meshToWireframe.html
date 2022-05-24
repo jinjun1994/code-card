@@ -161,15 +161,15 @@ console.log("mergeObject");
 				loader.setMeshoptDecoder( MeshoptDecoder );
 				loader.setDRACOLoader( dracoLoader );
 
-				loader.load( 'http://127.0.0.1:8081/conditional-lines/xili-p20.gltf', function ( gltf ) {
+				loader.load( 'http://127.0.0.1:8081/xili-p20.glb', function ( gltf ) {
 
 					// coffeemat.glb was produced from the source scene using gltfpack:
 					// gltfpack -i coffeemat/scene.gltf -o coffeemat.glb -cc -tc
 					// The resulting model uses EXT_meshopt_compression (for geometry) and KHR_texture_basisu (for texture compression using ETC1S/BasisLZ)
 
 					// gltf.scene.position.y = 8;
-
-					group.add( gltf.scene );
+            console.log(gltf);
+					// group.add( gltf.scene );
 					const model = mergeObject( gltf.scene );
 					const mesh = model.children[ 0 ];
 
