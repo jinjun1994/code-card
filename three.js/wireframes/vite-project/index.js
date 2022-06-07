@@ -2,6 +2,13 @@
 window.THREE = await import('three');
 // await import('three/examples/js/curves/NURBSUtils');
 // await import('three/examples/js/curves/NURBSCurve');
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { BufferGeometryUtils } from '//cdn.skypack.dev/three@0.130.1/examples/jsm/utils/BufferGeometryUtils.js';
+import { OrbitControls } from 'https://cdn.skypack.dev/three@0.130.1/examples/jsm/controls/OrbitControls.js';
+
 const frge = (await import('./wire.frag.js')).default
 const vert = (await import('./wire.vert.js')).default
 // Include dat.gui sliders
@@ -90,35 +97,112 @@ const material = new THREE.ShaderMaterial({
 // add the mesh with an empty geometry for now, we will change it later
 const mesh = new THREE.Mesh(new THREE.BufferGeometry(), material);
 scene.add(mesh);
+let model
+//-------------------GLTF---------------------------------
+{
+
+  function mergeObject(object) {
+    console.log("mergeObject");
+    object.updateMatrixWorld(true);
+
+    const geometry = [];
+    object.traverse(c => {
+
+      if (c.isMesh) {
+
+        const g = c.geometry;
+        g.applyMatrix4(c.matrixWorld);
+        for (const key in g.attributes) {
+
+          if (key !== 'position' && key !== 'normal') {
+
+            g.deleteAttribute(key);
+
+          }
+
+        }
+        geometry.push(g.toNonIndexed());
+
+      }
+
+    });
+
+    const mergedGeometries = BufferGeometryUtils.mergeBufferGeometries(geometry, false);
+    const mergedGeometry = BufferGeometryUtils.mergeVertices(mergedGeometries).center();
+
+    const group = new THREE.Group();
+    const mesh = new THREE.Mesh(mergedGeometry);
+    // group.add(mesh);
+    // return group;
+    return mergedGeometry
+
+  }
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath( 'draco/' );
+  dracoLoader.setDecoderConfig( { type: 'js' } );
+  const loader = new GLTFLoader()
+  // .setPath( 'models/gltf/' );
+  loader.setMeshoptDecoder(MeshoptDecoder);
+  loader.setDRACOLoader(dracoLoader);
+
+  loader.load('./xili-p20.glb', function (gltf) {
+
+
+    console.log(gltf);
+
+    //  model = mergeObject(gltf.scene);
+    console.log(model);
+    scene.add(gltf.scene);
+    console.log(scene);
+    // unindexBufferGeometry(model);
+    // addBarycentricCoordinates(model);
+    // if(model)  mesh.geometry = model
+
+  });
+  
+}
+
+//-------------------GLTF---------------------------------
 
 const clock = new THREE.Clock();
-
+{
+  const controls = new OrbitControls( camera, renderer.domElement );
+  controls.addEventListener( 'change', update ); // use if there is no animation loop
+  controls.minDistance = 4;
+  controls.maxDistance = 10000000;
+  // controls.target.set( 10, 90, - 16 );
+  controls.update();
+}
 // set up scene and start drawing
 createGeometry();
 setupGUI();
 resize();
-renderer.animate(update);
+
 canvas.style.visibility = '';
 update();
 draw();
 
-function update () {
+function update() {
+  requestAnimationFrame( update );
+
   // orbit the camera and update shader time
   const time = clock.getElapsedTime();
   const radius = 4;
   const angle = time * 2.5 * Math.PI / 180;
-  camera.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-  camera.lookAt(new THREE.Vector3());
+  // camera.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+  // camera.lookAt(new THREE.Vector3());
   mesh.material.uniforms.time.value = time;
   draw();
+ 
+
 }
 
-function draw () {
+function draw() {
   // render a single frame
   renderer.render(scene, camera);
 }
 
-function resize (width = window.innerWidth, height = window.innerHeight, pixelRatio = window.devicePixelRatio) {
+function resize(width = window.innerWidth, height = window.innerHeight, pixelRatio = window.devicePixelRatio) {
   // handle window resize
   renderer.setPixelRatio(pixelRatio);
   renderer.setSize(width, height);
@@ -127,7 +211,7 @@ function resize (width = window.innerWidth, height = window.innerHeight, pixelRa
   draw();
 }
 
-function createGeometry (type = 'TorusKnot', edgeRemoval = true) {
+function createGeometry(type = 'TorusKnot', edgeRemoval = true) {
   // dispose the old geometry if we have one
   if (mesh.geometry) mesh.geometry.dispose();
 
@@ -166,7 +250,7 @@ function createGeometry (type = 'TorusKnot', edgeRemoval = true) {
   mesh.geometry = geometry;
 }
 
-function toSpline (points) {
+function toSpline(points) {
   // This helper function makes a smooth NURBS curve from a set of points
   const nurbsDegree = 3;
   const nurbsKnots = [];
@@ -181,7 +265,7 @@ function toSpline (points) {
   return new THREE.NURBSCurve(nurbsDegree, nurbsKnots, nurbsControlPoints);
 }
 
-function saveScreenshot () {
+function saveScreenshot() {
   // force a specific output size
   const width = 2048;
   const height = 2048;
@@ -199,7 +283,7 @@ function saveScreenshot () {
   link.click();
 }
 
-function setupGUI () {
+function setupGUI() {
   // This function handles all the GUI sliders and updates
   const shader = gui.addFolder('Shader');
 

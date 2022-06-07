@@ -29,6 +29,8 @@ export function addBarycentricCoordinates(bufferGeometry, removeEdge = false) {
 };
 
 export function unindexBufferGeometry(bufferGeometry) {
+  // bufferGeometry.toNonIndexed()
+  // return
   // un-indices the geometry, copying all attributes like position and uv
   const index = bufferGeometry.getIndex();
   if (!index) return; // already un-indexed

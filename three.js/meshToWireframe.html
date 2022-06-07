@@ -40,13 +40,13 @@
 			import { DRACOLoader } from 'https://cdn.skypack.dev/three@0.130.1/examples/jsm/loaders/DRACOLoader.js';
 import { GLTFExporter } from "https://cdn.skypack.dev/three@0.130.1/examples/jsm/exporters/GLTFExporter.js";
 import { BufferGeometryUtils } from '//cdn.skypack.dev/three@0.130.1/examples/jsm/utils/BufferGeometryUtils.js';
-
+import { EdgesGeometry } from './EdgesGeometry.js';
 
 	// Configure and create Draco decoder.
 	const dracoLoader = new DRACOLoader();
 		dracoLoader.setDecoderPath( 'draco/' );
 		dracoLoader.setDecoderConfig( { type: 'js' } );
-			let camera, scene, renderer;
+			let camera, scene, renderer,gltfScene;
 			init();
 			render();
 			const group = new THREE.Group();
@@ -74,7 +74,7 @@ window.toGltf = function toGltf(){
 	const exporter = new GLTFExporter();
 
 	// Parse the input and generate the glTF output
-	exporter.parse(group, function (gltf) {
+	exporter.parse(gltfScene.children[25], function (gltf) {
 	  if (gltf instanceof ArrayBuffer) {
 		saveArrayBuffer(gltf, "scene.glb");
 	  } else {
@@ -102,7 +102,7 @@ console.log("mergeObject");
 
 							if ( key !== 'position' && key !== 'normal' ) {
 
-								g.deleteAttribute( key );
+								// g.deleteAttribute( key );
 
 							}
 
@@ -114,12 +114,14 @@ console.log("mergeObject");
 				} );
 
 				const mergedGeometries = BufferGeometryUtils.mergeBufferGeometries( geometry, false );
-				const mergedGeometry = BufferGeometryUtils.mergeVertices( mergedGeometries ).center();
-
-				const group = new THREE.Group();
-				const mesh = new THREE.Mesh( mergedGeometry );
-				group.add( mesh );
-				return group;
+				console.log(mergedGeometries);
+				return mergedGeometries
+				// const mergedGeometry = BufferGeometryUtils.mergeVertices( mergedGeometries ).center();
+				// console.log(mergedGeometry);
+				// const group = new THREE.Group();
+				// const mesh = new THREE.Mesh( mergedGeometry );
+				// group.add( mesh );
+				// return group;
 
 			}
 			function init() {
@@ -161,7 +163,7 @@ console.log("mergeObject");
 				loader.setMeshoptDecoder( MeshoptDecoder );
 				loader.setDRACOLoader( dracoLoader );
 
-				loader.load( 'http://127.0.0.1:8081/xili-p20.glb', function ( gltf ) {
+				loader.load( './xl-move.glb', function ( gltf ) {
 
 					// coffeemat.glb was produced from the source scene using gltfpack:
 					// gltfpack -i coffeemat/scene.gltf -o coffeemat.glb -cc -tc
@@ -169,9 +171,12 @@ console.log("mergeObject");
 
 					// gltf.scene.position.y = 8;
             console.log(gltf);
-					// group.add( gltf.scene );
+			gltfScene = gltf.scene;
+					scene.add( gltf.scene );
+					//--------整体生成-------------------
+				const	generateAll = ()=>{
 					const model = mergeObject( gltf.scene );
-					const mesh = model.children[ 0 ];
+					// const mesh = model.children[ 0 ];
 
 
 					
@@ -191,6 +196,32 @@ console.log("mergeObject");
 					// scene.add( new THREE.BoxHelper( line ) );
 		
 
+					// const edges = new EdgesGeometry( mesh.geometry, 15 );
+					const edges = new EdgesGeometry( model, 15 );
+					let line = new THREE.LineSegments( edges );
+					line.material.depthTest = false;
+					line.material.opacity = 0.1;
+					line.material.Color = new THREE.Color( 0x000 , 0.1);
+
+
+					line.material.transparent = true;
+					// line.position.x = 0;
+					// line.position.y = -6.5;
+					// line.position.z = 0;
+					gltf.scene.add( line );
+			
+					//--------整体生成-------------------
+
+				
+
+
+				} 
+				generateAll();
+					
+			    //逐个生成
+			const	 generateOenByOne = ()=>{
+                     gltf.scene.children.forEach(mesh => {
+						
 					const edges = new THREE.EdgesGeometry( mesh.geometry, 15 );
 					let line = new THREE.LineSegments( edges );
 					line.material.depthTest = false;
@@ -200,17 +231,20 @@ console.log("mergeObject");
 
 					line.material.transparent = true;
 					// line.position.x = 0;
-					line.position.y = -6.5;
+					// line.position.y = -6.5;
 					// line.position.z = 0;
 					group.add( line );
-					scene.add( group );
-					render();
+					console.log("object");
+					 });
+				 }
+
+				//  generateOenByOne()
 
 					window.scene = scene;
 
 
 				} );
-
+				render();
 				const controls = new OrbitControls( camera, renderer.domElement );
 				controls.addEventListener( 'change', render ); // use if there is no animation loop
 				controls.minDistance = 4;
